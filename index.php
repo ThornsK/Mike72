@@ -27,8 +27,7 @@ $database = $resultat->fetchAll(PDO::FETCH_ASSOC);
 		</script>
 	</head>
 	<body>
-		<div id="mike">
-		</div>
+
 
 		<h1>Lanceur de requêtes</h1>
 		<form method="post" action="">
@@ -45,6 +44,14 @@ $database = $resultat->fetchAll(PDO::FETCH_ASSOC);
 			</textarea></form><br/>
 			<input type="submit" value="Envoyer la requête">
 		</form>
+
+		<div id="mike">
+		</div>
+		<div>
+			<p id="message">
+					
+			</p>	
+		</div>
 
 		<script>
 			/**/
@@ -68,12 +75,30 @@ $database = $resultat->fetchAll(PDO::FETCH_ASSOC);
 					var request = $.ajax({
 						url: "read2.php", // page de la requête
 						method: "POST", // methode de la requete
-						data: {requete : myRequest, data: dataBase} // Data envoyée à la page
+						data: {requet : myRequest, datab: dataBase} // Data envoyée à la page
 					});
 
-					request.done(function( msg ) {
-						$( "#mike" ).html( msg );
-						$("#requete").html(myRequest);
+					request.done(function( msg ) { // success !
+						console.log(msg);
+						msg = JSON.parse(msg);
+
+
+						if(msg.erreur == false) {
+
+							$( "#mike" ).html( msg.message );
+							$("#requete").html(myRequest);
+
+							$("#message").text("Voici le résultat de votre requête : ");
+							$("#message").css("background-color", "green");
+							$("#message").css("color", "white");
+
+						}
+						else {
+							$("#message").text(msg.message);
+							$("#message").css("background-color", "red");
+							$("#message").css("color", "white");
+
+						}
 					});
 
 					request.fail(function( jqXHR, textStatus ) {
