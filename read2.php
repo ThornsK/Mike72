@@ -1,101 +1,66 @@
 <?php
-header("Access-Control-Allow-Origin : *"); //les requetes http de type crosssite sont des requetes pour des ressources localisees sur un domaine different de celui a l'origine de la requete 
 
+	// Les requêtes HTTP de type Cross-site sont des requêtes pour des ressources localisées sur un domaine différent de celui à l'origine de la requête (plus d'info : https://developer.mozilla.org/fr/docs/HTTP/Access_control_CORS').
+	header('Access-Control-Allow-Origin: *'); 
 
-$retour = array("erreur" => true);
+	$retour = array("erreur" => true); // Initialisation de la variable de retour
 
-if(isset($_POST["requet"]) && isset($_POST["datab"])){
+	// Verification de l'existance de nos POST
+	if(isset($_POST["requet"]) && isset($_POST["Mike"])){
 
-    if(!empty($_POST["requet"]) && !empty($_POST["datab"])){
+		// Verification du contenu de nos POST
+		if(!empty($_POST["requet"]) && !empty($_POST["Mike"])){
 
-        $bdd = $_POST["datab"];
+			// CONNEXION BDD
+			$pdo = new PDO('mysql:host=localhost;dbname='.$_POST["Mike"], 'root', '');
 
-        $pdo = new PDO("mysql:host=localhost;dbname=$bdd", "root", "", array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"));
+			// Requete SQL envoyer par notre utilisateur
+			$resultat = $pdo->prepare($_POST["requet"]);
+			if( $resultat->execute()){
 
+				// Trie de la requete
+				$utilisateurs = $resultat->fetchall(PDO::FETCH_ASSOC);
 
-        $resultat = $pdo -> prepare($_POST["requet"]);        
-        
+				// Creation de la varible tableau
+				$tableau = "<div>
+					<div>
+						<p>Requet : <span id='requet'></span></p>
+						<p>Nombre de lignées : <span id='lignees'>".$resultat->RowCount()."</span></p>
+					</div>
+				<div>
+					<table>
+						<tr>";
 
-        if (!$resultat) {
-            $retour["message"] = $pdo->errorInfo()["2"];
-            echo json_encode($retour);
-            return;
-        }
-        $resultat -> execute();   
+				// Meme syntaxe. Trie du PREMIER ET SEUL element.
+				foreach ($utilisateurs[0] as $key => $value){
+					$tableau .= '<th>'.$key.'</th>';
+				}
 
-        $utilisateurs = $resultat -> fetchAll(PDO::FETCH_ASSOC);
-        
-        $tableau = "<div><div><p>Requet : <span id='requet'></span></p><p>Nombre de lignées : <span id='lignees'>".$resultat->RowCount()."</span></p></div><div><table border='1'><tr>";  
+				$tableau .= "</tr>";
 
-        foreach ($utilisateurs[0] as $key => $value) {
-            $tableau .= "<th>" . $key ."</th>";
+				// Boucle pour parcourir chaque ligne de notre bdd
+				foreach ($utilisateurs as $key => $value){
+					$tableau .= "<tr>";
 
-        }        
+					// Boucle chaque colone de nos lignes
+					foreach ($utilisateurs[$key] as $key => $value)
+						$tableau .= "<td>".$value."</td>";
 
-        $tableau .= "</tr>"; 
+					$tableau .= "</tr>";
+				}
+				$tableau .= "</table>
+					</div>
+				</div>";
+				$retour["erreur"] = false;
+				$retour["message"] = $tableau;
+			}else{
+				$retour["message"] = $resultat->errorInfo()[2];
+			}
+		}else{
+			$retour["message"] = "Parametre vide!";  // Gestion erreur if empty variable POST
+		}
+	}else{
+		$retour["message"] = "Parametre manquant!";  // Gestion erreur if isset variable POST
+	}
 
-        for ($i=0; $i < count($utilisateurs); $i++) {
-            
-        $tableau .= "<tr>";
-
-            foreach ($utilisateurs[$i] as $key => $value) {
-                $tableau .= "<td>" . $value . "</td>";
-            }
-            $tableau .= "</tr>";
-
-        }        
-
-        $tableau .= "</table></div></div><br>";
-
-        $retour["erreur"] = false;
-        $retour["message"] = $tableau;    
-    } // fin du empty  
-        else {
-        $retour["message"] = "Parametre vide!"; // gestion erreur if emmpty
-    }
-} // fin du isset 
-else {
-    $retour["message"] = "Parametre manquant"; // gestion erreur if !isset
-}
-echo json_encode($retour);
-
-
-
-
-
-
-
-/* ancient
-$pdo = new PDO("mysql:host=localhost", "root", "");
-$databases = $pdo -> query("SHOW DATABASES");
-$databases = $databases -> fetchAll(PDO::FETCH_ASSOC);if ($_GET && !$_POST) {    if (isset($_GET["repetition"])) {
-        $repetition = explode(" - ", $_GET["repetition"]);
-        $bdd = $repetition[0];
-        $requete = $repetition[1];        $pdo = new PDO("mysql:host=localhost;dbname=$bdd", "root", "");
-        $resultat = $pdo -> prepare("$requete");        if($resultat -> execute()){            $display = $resultat -> fetchAll(PDO::FETCH_ASSOC);            $tables = $pdo -> query("SHOW TABLES");
-            $tables = $tables -> fetchAll(PDO::FETCH_ASSOC);            // traitement fichier historique
-            $historique = fopen("historique.txt", "a");
-            fwrite($historique, $bdd . " - " . $requete . "\r\n");
-            fclose($historique);            $msg = "<p style='padding: 10px; background-color: green;'>Voici le resultat de votre requete</p>";
-            if(empty($display)){
-                $msg = "<p style='padding: 10px; background-color: green;'>Votre requete a été effectuée avec succès</p>";
-            }
-        }
-    }    if (isset($_GET["deletion"]) && !$_POST && file_exists("historique.txt")) {
-        unlink("historique.txt");
-        header("location:?");
-    }
-}if($_POST){$bdd = $_POST["database"];
-$pdo = new PDO("mysql:host=localhost;dbname=$bdd", "root", "");$requete = $_POST["sql"];
-$resultat = $pdo -> prepare("$requete");    if($resultat -> execute()){        $display = $resultat -> fetchAll(PDO::FETCH_ASSOC);        $tables = $pdo -> query("SHOW TABLES");
-        $tables = $tables -> fetchAll(PDO::FETCH_ASSOC);        $historique = fopen("historique.txt", "a");
-        fwrite($historique, $bdd . " - " . $requete . "\r\n");
-        fclose($historique);        $msg = "<p style='padding: 10px; background-color: green;'>Voici le resultat de votre requete</p>";        if(empty($display)){
-            $msg = "<p style='padding: 10px; background-color: green;'>Votre requete a été effectuée avec succès</p>";
-        }
-    }    else {
-        $erreur = $resultat ->errorInfo();
-        $msg = "<p style='padding: 10px; background-color: red;'>" . $erreur[2] . "</p>";
-        }}
-*/ 
-?>
+	echo json_encode($retour);

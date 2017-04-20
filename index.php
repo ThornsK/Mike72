@@ -1,111 +1,100 @@
 <?php
 
-$pdo = new PDO(
-		"mysql:host=localhost;dbname=Mike", "root", "",
-		array(
+	/******* START recuperation de la liste des base de donnée *******/
+		// CONNEXION BDD
+		$pdo = new PDO('mysql:host=localhost;dbname=Mike', 'root', '', array(
 			PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING,
-			
-			PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"
+			PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
+		));
 
-	));
+		// Requete SQL
+		$resultat = $pdo->prepare("SHOW DATABASES");
+		$resultat->execute();
 
-$resultat = $pdo->prepare("SHOW DATABASES");
-$resultat->execute();
-
-$database = $resultat->fetchAll(PDO::FETCH_ASSOC);
+		// Trie de la requete
+		$dataBase = $resultat->fetchall(PDO::FETCH_ASSOC);
+	/******* END *******/
 
 ?>
-
-
-<!DOCTYPE html>
-<html lang="fr">
+<html>
 	<head>
-		<meta charset="utf-8">
-		<title>AJAX</title>
-		<script src="
-		https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js">
-		</script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	</head>
 	<body>
-
-
-		<h1>Lanceur de requêtes</h1>
-		<form method="post" action="">
-			<label>Selection base de donnée : </label><br/>
-			<select id="select_bdd">
+		<div id="contenu">
+			<form>
+				<select id="databaseSelect">
 					<?php
-						foreach($database as $key => $value) {
+						foreach($dataBase as $value)
 							echo "<option value='".$value['Database']."'>".$value['Database']."</option>";
-						}
 					?>
-			</select><br/>
-			<textarea id="requete" name="requete" rows="4" cols="50" placeholder="Veuillez saisir votre requête">
-				
-			</textarea></form><br/>
-			<input type="submit" value="Envoyer la requête">
-		</form>
-
+				</select>
+				<fieldset>
+					<legend>Requete</legend>
+					<textarea name="sql" id="sql" rows="4" cols="50">SELECT * FROM utilisateurs</textarea>
+					<br/>
+					<input type="submit" value="Envoyez" />
+				</fieldset>
+			</form>
+		</div>
 		<div id="mike">
 		</div>
 		<div>
-			<p id="message">
-					
-			</p>	
+			<p id="message"></p>
 		</div>
-
 		<script>
-			/**/
-			$(function(){
+			$(function() { // document ready en Jquery
+				$( "input" ).click(function(e) { // Evenement Jquery - Evenement qui se declanche au click d'un balise "input" - variable e stocke l'evenement
 
-				$("input").click(function(e){
-
-					// annuler, l'actualisation de la page
+					// Annulation de l'actualisation de la page'
 					e.preventDefault();
 
 
-					console.log("Mike");
+					// Console du meillieur Prenom au monde. PS: Mike > Vincent
+					console.log("Mike")
+					
+					// Récuperation de la valeur de notre textarea.
+					var myRequest = $("#sql").val(); 
 
-					// récupération de la valeur de notre textarea
-					var myRequest = $("#requete").val();
+					var dataBase = $("#databaseSelect").val();
 
-					var dataBase = $("#select_bdd").val();
-
-					// Requête AJAX
-					/*var menuId = $( "ul.nav" ).first().attr( "id" );*/
+					// Requete Ajax - Envoi des information du formulaire vers un autre page de traitement.
 					var request = $.ajax({
-						url: "read2.php", // page de la requête
-						method: "POST", // methode de la requete
-						data: {requet : myRequest, datab: dataBase} // Data envoyée à la page
+						url: "read2.php", // Page de la requete
+						method: "POST", // Methode de la requete
+						data: {requet : myRequest, Mike: dataBase} // Data envoyer à la page
 					});
-
-					request.done(function( msg ) { // success !
-						console.log(msg);
-						msg = JSON.parse(msg);
+					
+					request.done(function( msg ) { // Success
 
 
-						if(msg.erreur == false) {
+						console.log(msg); // Affichage dans la console avant la conversion en un Object - msg est une String
 
-							$( "#mike" ).html( msg.message );
-							$("#requete").html(myRequest);
+						msg = JSON.parse(msg); // Conversion Json en Object Javascript
 
-							$("#message").text("Voici le résultat de votre requête : ");
-							$("#message").css("background-color", "green");
-							$("#message").css("color", "white");
+						console.info(msg); // Affichage dans la console part la conversion en un Object - msg est une Object Javascript
 
-						}
-						else {
+						if(msg.erreur == false)
+						{
+							$( "#mike" ).html( msg.message ); // Mise à jour du contenu de la div qui a pour id "Mike"
+							$( "#requet" ).html( myRequest ); // Mise à jour du contenu de la span qui a pour id "requet" generer dans le tableau envoyer par le php
+
+							
+							$("#message").text("Voici les resultats de votre requete.");
+							$("#message").css( "background-color", "green" );
+
+						}else
+						{
 							$("#message").text(msg.message);
-							$("#message").css("background-color", "red");
-							$("#message").css("color", "white");
-
+							$("#message").css( "background-color", "red" );
 						}
 					});
-
+					
 					request.fail(function( jqXHR, textStatus ) {
-						alert( "Request failed: " + textStatus );
+						alert( "Request failed: " + textStatus ); // En cas d'error de communication avec le serveur ou de code erreur
 					});
 				});
 			});
 		</script>
-	</body>
-</html>
+	<body>
+<html>
